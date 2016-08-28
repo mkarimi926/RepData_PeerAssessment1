@@ -1,5 +1,5 @@
 # Reproducible Research: Peer Assessment 1 By Mahmood Karimi
-
+This project is about ananlysis of step-tracking data for two month of a person. We show you how has been the activity of the person during these two months.
 
 ## Loading and preprocessing the data
 
@@ -14,39 +14,56 @@ df <- read.csv("./data/activity.csv")
 ```r
 agd <- aggregate(df$steps, by=list(df$date), FUN=sum)
 names(agd) <- c("date", "sumsteps")
-plot(agd)
+par(col="red", las=3)
+plot(agd$date, agd$sumsteps, type = "l", main = "#steps per day", xlab = "", 
+     ylab = "#steps")
+abline(h=mean(agd$sumsteps, na.rm=TRUE))
 ```
 
 ![](PA1_files/figure-html/2nd chunk-1.png)<!-- -->
 
 ```r
-summary(agd)
+summary(agd$sumsteps)
 ```
 
 ```
-##          date       sumsteps    
-##  2012-10-01: 1   Min.   :   41  
-##  2012-10-02: 1   1st Qu.: 8841  
-##  2012-10-03: 1   Median :10765  
-##  2012-10-04: 1   Mean   :10766  
-##  2012-10-05: 1   3rd Qu.:13294  
-##  2012-10-06: 1   Max.   :21194  
-##  (Other)   :55   NA's   :8
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##      41    8841   10760   10770   13290   21190       8
 ```
+
+```r
+boxplot(agd$sumsteps)
+```
+
+![](PA1_files/figure-html/2nd chunk-2.png)<!-- -->
 
 
 ## What is the average daily activity pattern?
 
 ```r
-tsa <- ts(agd, frequency = 365)
-plot.ts(tsa)
+tsa <- ts(df)
+plot.ts(tsa, main="Activity pattern")
 ```
 
 ![](PA1_files/figure-html/3rd chunk-1.png)<!-- -->
 
+```r
+agd <- aggregate(df$steps, by=list(df$interval), FUN=mean, na.rm=TRUE)
+names(agd) <- c("interval", "meansteps")
+t <- agd[agd$meansteps==max(agd$meansteps),]
+```
+
+The 835 interval contrains maximum number of steps on average.
+
+
 ## Imputing missing values
+The strategy for imputing has been different. For the day that didn't have any similar equivalent in another month the mean of total days is used.  
+For the days that had similar equivalent days, the corresponding equivalent day is used.
+
+Days with NA values:
 
 ```r
+# Finding the days with NA values
 na_steps <- table(df[is.na(df$steps), "date"])
 na_df <- as.data.frame(na_steps)
 na_df[na_df$Freq > 0,]
@@ -65,6 +82,7 @@ na_df[na_df$Freq > 0,]
 ```
 
 ```r
+# Define two functons to impute NA values
 copy_date <- function(df1, from_date, to_date) {
         # df1[to_date, steps] <- df1[from_date, steps]
         t1df <- df1[df1$date != to_date,]
@@ -86,6 +104,7 @@ set_avg <- function(df1, dt) {
         df1
 }
 
+# Imputing the NA values
 df <- set_avg(df, "2012-10-01")
 df <- copy_date(df, "2012-11-08","2012-10-08")
 df <- copy_date(df, "2012-10-01","2012-11-01")
@@ -95,26 +114,24 @@ df <- copy_date(df, "2012-10-10","2012-11-10")
 df <- copy_date(df, "2012-10-14","2012-11-14")
 df <- copy_date(df, "2012-10-30","2012-11-30")
 
+# Drawing the result
 agd <- aggregate(df$steps, by=list(df$date), FUN=sum)
 names(agd) <- c("date", "sumsteps")
-plot(agd)
+par(col="red", las=3)
+plot(agd$date, agd$sumsteps, type = "l", main = "#steps per day", xlab = "", 
+     ylab = "#steps")
+abline(h=mean(agd$sumsteps))
 ```
 
 ![](PA1_files/figure-html/4th chunk-1.png)<!-- -->
 
 ```r
-summary(agd)
+summary(agd$sumsteps)
 ```
 
 ```
-##          date       sumsteps    
-##  2012-10-01: 1   Min.   :   41  
-##  2012-10-02: 1   1st Qu.: 8918  
-##  2012-10-03: 1   Median :10762  
-##  2012-10-04: 1   Mean   :10739  
-##  2012-10-05: 1   3rd Qu.:12883  
-##  2012-10-06: 1   Max.   :21194  
-##  (Other)   :55
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      41    8918   10760   10740   12880   21190
 ```
 
 
@@ -131,8 +148,8 @@ names(agd_we) <- c("interval", "meansteps_we")
 names(agd_wd) <- c("interval", "meansteps_wd")
 agd <- merge(agd_wd, agd_we, by="interval")
 par(mfrow=c(1,2))
-plot(agd$interval, agd$meansteps_wd)
-plot(agd$interval, agd$meansteps_we)
+plot(agd$interval, agd$meansteps_wd, main="Average #steps", xlab = "Time", ylab = "Weekdays")
+plot(agd$interval, agd$meansteps_we, main="Average #steps", xlab = "Time", ylab = "Weekends")
 ```
 
 ![](PA1_files/figure-html/5th chunk-1.png)<!-- -->
