@@ -4,6 +4,7 @@ This project is about ananlysis of step-tracking data for two month of a person.
 ## Loading and preprocessing the data
 
 ```r
+library(lattice)
 unzip("./activity.zip", exdir = "./data")
 df <- read.csv("./data/activity.csv")
 ```
@@ -14,13 +15,20 @@ df <- read.csv("./data/activity.csv")
 ```r
 agd <- aggregate(df$steps, by=list(df$date), FUN=sum)
 names(agd) <- c("date", "sumsteps")
-par(col="red", las=3)
-plot(agd$date, agd$sumsteps, type = "l", main = "#steps per day", xlab = "", 
-     ylab = "#steps")
+plot(agd$sumsteps, type = "l", main = "#Steps per day", xlab = "Days", 
+     ylab = "#Steps")
 abline(h=mean(agd$sumsteps, na.rm=TRUE))
 ```
 
 ![](PA1_files/figure-html/2nd chunk-1.png)<!-- -->
+
+```r
+hist(agd$sumsteps, breaks = nrow(agd), col = "green" ,main="Histogram of Total Daily Steps", xlab="Total Daily Steps")
+```
+
+![](PA1_files/figure-html/2nd chunk-2.png)<!-- -->
+  
+Summary(Mean, Median, ... of steps per day)
 
 ```r
 summary(agd$sumsteps)
@@ -33,23 +41,23 @@ summary(agd$sumsteps)
 
 ```r
 boxplot(agd$sumsteps)
+title("BoxPlot of Steps per day")
 ```
 
-![](PA1_files/figure-html/2nd chunk-2.png)<!-- -->
+![](PA1_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
 
 
 ## What is the average daily activity pattern?
 
 ```r
-tsa <- ts(df)
-plot.ts(tsa, main="Activity pattern")
+agd <- aggregate(df$steps, by=list(df$interval), FUN=mean, na.rm=TRUE)
+names(agd) <- c("interval", "meansteps")
+plot(agd$interval, agd$meansteps, type="l", main="Average Daily Activity pattern", xlab="Time", ylab="Steps")
 ```
 
 ![](PA1_files/figure-html/3rd chunk-1.png)<!-- -->
 
 ```r
-agd <- aggregate(df$steps, by=list(df$interval), FUN=mean, na.rm=TRUE)
-names(agd) <- c("interval", "meansteps")
 t <- agd[agd$meansteps==max(agd$meansteps),]
 ```
 
@@ -117,13 +125,18 @@ df <- copy_date(df, "2012-10-30","2012-11-30")
 # Drawing the result
 agd <- aggregate(df$steps, by=list(df$date), FUN=sum)
 names(agd) <- c("date", "sumsteps")
-par(col="red", las=3)
-plot(agd$date, agd$sumsteps, type = "l", main = "#steps per day", xlab = "", 
-     ylab = "#steps")
+par(col="red", las=0)
+plot(agd$sumsteps, type = "l", main = "#Steps per day (After Imputing null values)", xlab = "Days", ylab = "#steps")
 abline(h=mean(agd$sumsteps))
 ```
 
 ![](PA1_files/figure-html/4th chunk-1.png)<!-- -->
+
+```r
+hist(agd$sumsteps, breaks = nrow(agd), col = "green", main="Histogram of Total Daily Steps (After Imputing null values)", xlab="Total Daily Steps")
+```
+
+![](PA1_files/figure-html/4th chunk-2.png)<!-- -->
 
 ```r
 summary(agd$sumsteps)
@@ -138,18 +151,19 @@ summary(agd$sumsteps)
 ## Are there differences in activity patterns between weekdays and weekends?
 
 ```r
-df$dow <- weekdays(as.Date(df$date))
-df$holiday <- (df$dow == "شنبه" | df$dow == "يكشنبه")
-df_we <- df[df$holiday,]
-df_wd <- df[!df$holiday,]
-agd_we <- aggregate(df_we$steps, by=list(df_we$interval), FUN=mean)
-agd_wd <- aggregate(df_wd$steps, by=list(df_wd$interval), FUN=mean)
-names(agd_we) <- c("interval", "meansteps_we")
-names(agd_wd) <- c("interval", "meansteps_wd")
-agd <- merge(agd_wd, agd_we, by="interval")
-par(mfrow=c(1,2))
-plot(agd$interval, agd$meansteps_wd, main="Average #steps", xlab = "Time", ylab = "Weekdays")
-plot(agd$interval, agd$meansteps_we, main="Average #steps", xlab = "Time", ylab = "Weekends")
+for(i in 1:nrow(df)) {
+        if (chron::is.weekend(df$date[i]) == TRUE) {
+            df$day.type[i] <- "weekend"
+        } else {
+            df$day.type[i] <- "weekday"
+        }
+}
+Steps.by.day3 <- with(df, aggregate(steps, by=list(interval, day.type), FUN="mean"))
+    names(Steps.by.day3) <- c("interval", "day.type", "steps")
+    xyplot(steps ~ interval | day.type, Steps.by.day3, type="l", 
+           layout=c(1,2),
+           xlab="Interval",
+           ylab="Number of Steps")
 ```
 
 ![](PA1_files/figure-html/5th chunk-1.png)<!-- -->
